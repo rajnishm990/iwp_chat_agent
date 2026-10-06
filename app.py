@@ -17,7 +17,7 @@ for k in ("GROQ_API_KEY", "SMTP_USER", "SMTP_PASS", "HANDOFF_OVERRIDE_EMAIL"):
     except Exception:
         pass
 
-BADGE = {"hot": "🔥 Hot lead", "warm": "🌤️ Warm lead", "cold": "❄️ Cold lead"}
+BADGE = {"hot": "Hot lead", "warm": " Warm lead", "cold": "Cold lead"}
 DEFAULT_DEPTS = [{"key": "sales", "name": "Sales", "email": "replace-me@example.com", "phone": "", "handles": "new enquiries and quotes"}]
 DEFAULT_FIELDS = [{"key": "contact_name", "label": "Name"}, {"key": "email", "label": "Email"}, {"key": "phone", "label": "Phone"}, {"key": "interest", "label": "Interest"}]
 
