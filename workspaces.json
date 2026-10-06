@@ -1,0 +1,54 @@
+[
+  {
+    "name": "IWP Weddings",
+    "company": "IWP - Indian Wedding Planners",
+    "urls": ["https://www.indianweddingplanners.in/"],
+    "departments": [
+      {"key": "wedding_sales", "name": "Wedding Planning (Sales)", "email": "info@indianweddingplanners.in", "phone": "+91 94143 66666", "handles": "new wedding enquiries, venue shortlists, budgets, discovery calls"},
+      {"key": "client_support", "name": "Existing Client Support", "email": "replace-me@example.com", "phone": "+91 94143 66666", "handles": "current clients, logistics, guest hospitality, urgent issues"},
+      {"key": "careers", "name": "Careers / HR", "email": "replace-me@example.com", "phone": "+91 94143 66666", "handles": "job applications, internships, hiring"},
+      {"key": "partnerships", "name": "Vendors & Venues", "email": "replace-me@example.com", "phone": "+91 94143 66666", "handles": "vendor, decor, venue and hotel partnership proposals"}
+    ],
+    "lead_fields": [
+      {"key": "contact_name", "label": "Name"}, {"key": "email", "label": "Email"}, {"key": "phone", "label": "Phone"},
+      {"key": "based_in", "label": "Based in (India / NRI / abroad)"}, {"key": "wedding_date", "label": "Wedding date"},
+      {"key": "guest_count", "label": "Guest count"}, {"key": "destination", "label": "Destination / city"},
+      {"key": "venue_style", "label": "Venue style"}, {"key": "budget", "label": "Budget band"},
+      {"key": "ceremony_type", "label": "Ceremony type"}, {"key": "timezone", "label": "Time zone / best call time"}
+    ]
+  },
+  {
+    "name": "AMK Travels",
+    "company": "AMK Travels India",
+    "urls": ["https://www.amktravelsindia.com/"],
+    "departments": [
+      {"key": "travel_sales", "name": "Travel Sales", "email": "replace-me@example.com", "phone": "+91 00000 00000", "handles": "tour packages, custom itineraries, quotes"},
+      {"key": "bookings_support", "name": "Bookings & Support", "email": "replace-me@example.com", "phone": "+91 00000 00000", "handles": "existing bookings, cabs, changes, cancellations, urgent issues"},
+      {"key": "careers", "name": "Careers / HR", "email": "replace-me@example.com", "phone": "+91 00000 00000", "handles": "job applications, hiring"},
+      {"key": "partnerships", "name": "Partnerships", "email": "replace-me@example.com", "phone": "+91 00000 00000", "handles": "hotels, transport and agent partnerships"}
+    ],
+    "lead_fields": [
+      {"key": "contact_name", "label": "Name"}, {"key": "email", "label": "Email"}, {"key": "phone", "label": "Phone"},
+      {"key": "destination", "label": "Destination"}, {"key": "travel_dates", "label": "Travel dates"},
+      {"key": "travelers", "label": "Number of travellers"}, {"key": "trip_type", "label": "Trip type"},
+      {"key": "budget", "label": "Budget"}, {"key": "hotel_preference", "label": "Hotel / transport preference"}
+    ]
+  },
+  {
+    "name": "Unified (IWP + AMK)",
+    "company": "IWP & AMK Travels",
+    "urls": ["https://www.indianweddingplanners.in/", "https://www.amktravelsindia.com/"],
+    "departments": [
+      {"key": "wedding_sales", "name": "Wedding Planning (Sales)", "email": "info@indianweddingplanners.in", "phone": "+91 94143 66666", "handles": "wedding enquiries, venues, budgets"},
+      {"key": "travel_sales", "name": "Travel Sales", "email": "replace-me@example.com", "phone": "+91 00000 00000", "handles": "tour packages, itineraries, quotes"},
+      {"key": "support", "name": "Client & Booking Support", "email": "replace-me@example.com", "phone": "+91 94143 66666", "handles": "existing clients/bookings, complaints, urgent issues"},
+      {"key": "careers", "name": "Careers / HR", "email": "replace-me@example.com", "phone": "+91 94143 66666", "handles": "job applications, hiring"}
+    ],
+    "lead_fields": [
+      {"key": "contact_name", "label": "Name"}, {"key": "email", "label": "Email"}, {"key": "phone", "label": "Phone"},
+      {"key": "interest", "label": "Interest (wedding / travel)"}, {"key": "destination", "label": "Destination"},
+      {"key": "event_date", "label": "Event / travel date"}, {"key": "party_size", "label": "Guests / travellers"},
+      {"key": "budget", "label": "Budget"}, {"key": "based_in", "label": "Based in"}
+    ]
+  }
+]

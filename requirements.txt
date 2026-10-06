@@ -1,0 +1,9 @@
+streamlit>=1.40
+groq>=0.13
+fastembed>=0.4
+numpy
+requests
+beautifulsoup4
+pypdf
+python-docx
+pandas
