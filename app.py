@@ -8,7 +8,7 @@ import streamlit as st
 import agent
 from rag import Index, crawl, read_upload
 
-st.set_page_config(page_title="AI Concierge", page_icon="✨", layout="wide")
+st.set_page_config(page_title="IWP CHAT SUPPORT", layout="wide")
 
 for k in ("GROQ_API_KEY", "LLM_MODEL", "SMTP_USER", "SMTP_PASS", "HANDOFF_OVERRIDE_EMAIL"):
     try:
@@ -17,7 +17,7 @@ for k in ("GROQ_API_KEY", "LLM_MODEL", "SMTP_USER", "SMTP_PASS", "HANDOFF_OVERRI
     except Exception:
         pass
 
-BADGE = {"hot": "🔥 Hot lead", "warm": "🌤️ Warm lead", "cold": "❄️ Cold lead"}
+BADGE = {"hot": "Hot lead", "warm": "Warm lead", "cold": "Cold lead"}
 DEFAULT_DEPTS = [{"key": "sales", "name": "Sales", "email": "replace-me@example.com", "phone": "", "handles": "new enquiries and quotes"}]
 DEFAULT_FIELDS = [{"key": "contact_name", "label": "Name"}, {"key": "email", "label": "Email"}, {"key": "phone", "label": "Phone"}, {"key": "interest", "label": "Interest"}]
 
@@ -164,8 +164,9 @@ def chat_view(name, W):
 
 
 def inbox_view(name, W):
-    st.title("📥 Omnichannel inbox")
-    st.caption("Instagram, WhatsApp and email land in one place. AI classifies, extracts the lead, drafts a grounded reply and routes it. A human approves. (Messages are simulated here; the same pipeline plugs into the Meta webhooks.)")
+    st.title("Omnichannel inbox")
+    #st.caption("Instagram, WhatsApp and email land in one place. AI classifies, extracts the lead, drafts a grounded reply and routes it. A human approves. (Messages are simulated here; the same pipeline plugs into the Meta webhooks.)")
+    st.caption("Instagram, WhatsApp and email land in one place. AI classifies, extracts the lead, drafts a grounded reply and routes it. Human approves.")
     depts, fields = recs(W["depts"]), recs(W["fields"])
     ws_cfg = {"company": W["company"], "depts": depts, "fields": fields}
     c1, c2 = st.columns([1, 2])
@@ -176,7 +177,7 @@ def inbox_view(name, W):
         sender = st.text_input("Sender", snd, key=f"sn{sample}")
         message = st.text_area("Message", txt, height=150, key=f"mg{sample}")
         run1 = st.button("Process with AI", type="primary", use_container_width=True)
-        run_all = st.button("⚡ Triage all samples", use_container_width=True)
+        run_all = st.button("Triage all samples", use_container_width=True)
 
     def process(ch_, snd_, msg_):
         r = agent.triage(W["index"], ws_cfg, ch_, snd_, msg_)
@@ -226,7 +227,7 @@ def inbox_view(name, W):
 
 
 def admin_view(name, W):
-    st.title("📊 Admin: leads & handoffs")
+    st.title("Admin: leads & handoffs")
     leads = [v for v in ss.leads.values()]
     n_hot = sum(1 for v in leads if v.get("score") == "hot")
     mins = st.number_input("Assumption: minutes a person spends triaging one message", 1, 30, 5)
@@ -252,12 +253,12 @@ def admin_view(name, W):
 
 
 st.sidebar.title("✨ AI Concierge")
-view = st.sidebar.radio("View", ["💬 Chat", "📥 Omnichannel inbox", "📊 Admin"])
+view = st.sidebar.radio("View", ["Chat", "Omnichannel inbox", "Admin"])
 name = st.sidebar.selectbox("Workspace", list(ss.ws))
 W = ss.ws[name]
 st.sidebar.toggle("Send real emails", key="real_mail", value=False, help="Off = demo mode: handoffs are logged, nothing is sent.")
 
-with st.sidebar.expander("⚙️ Knowledge & configuration"):
+with st.sidebar.expander("Knowledge & configuration"):
     W["company"] = st.text_input("Company name", W["company"], key=f"co_{name}")
     urls = st.text_area("Website URLs (one per line)", "\n".join(W["urls"]), key=f"u_{name}")
     W["urls"] = [u.strip() for u in urls.splitlines() if u.strip().startswith("http")]
@@ -292,4 +293,4 @@ if st.sidebar.button("Reset this chat", use_container_width=True):
     ss.leads.pop(f"chat:{name}", None)
     st.rerun()
 
-{"💬 Chat": chat_view, "📥 Omnichannel inbox": inbox_view, "📊 Admin": admin_view}[view](name, W)
+{"Chat": chat_view, " Omnichannel inbox": inbox_view, "Admin": admin_view}[view](name, W)
