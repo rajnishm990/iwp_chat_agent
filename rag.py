@@ -2,9 +2,9 @@ import io
 import pickle
 import re
 import time
-from collections import deque
+from collections import Counter, deque
 from pathlib import Path
-from urllib.parse import urljoin, urlparse, urldefrag
+from urllib.parse import unquote, urljoin, urlparse, urldefrag
 
 import numpy as np
 import requests
@@ -33,9 +33,42 @@ def clean(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
+PHONE = re.compile(r"\+\d{1,3}[\s-]?\(?\d{2,5}\)?[\s-]?\d{3,5}[\s-]?\d{3,5}|\b[6-9]\d{4}[\s-]?\d{5}\b")
+EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+
+
+def contacts_from(soup, text):
+    phones, emails = set(), set()
+    for a in soup.find_all("a", href=True):
+        h = a["href"]
+        if h.lower().startswith("tel:"):
+            phones.add(clean(unquote(h[4:])))
+        elif h.lower().startswith("mailto:"):
+            emails.add(unquote(h[7:]).split("?")[0].strip())
+        else:
+            m = re.search(r"(?:wa\.me/|phone=)\+?(\d{8,15})", h)
+            if m:
+                phones.add(f"+{m.group(1)} (WhatsApp)")
+    phones |= {clean(m) for m in PHONE.findall(text)}
+    emails |= set(EMAIL.findall(text))
+    emails = {e for e in emails if not e.lower().endswith((".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"))}
+    return phones, emails
+
+
+def uniq_phones(counter, n=6):
+    out, seen = [], set()
+    for k, _ in counter.most_common():
+        d = re.sub(r"\D", "", k)[-10:]
+        if d not in seen:
+            seen.add(d)
+            out.append(k)
+    return out[:n]
+
+
 def crawl(start_url, max_pages=40, progress=None):
     root = urlparse(start_url).netloc
     seen, queue, docs = set(), deque([start_url]), []
+    phones, emails, boiler = Counter(), Counter(), {}
     while queue and len(docs) < max_pages:
         url = urldefrag(queue.popleft())[0]
         if url in seen or url.lower().endswith(SKIP_EXT):
@@ -53,6 +86,13 @@ def crawl(start_url, max_pages=40, progress=None):
             link = urldefrag(urljoin(url, a["href"]))[0]
             if urlparse(link).netloc == root and link not in seen:
                 queue.append(link)
+        p, e = contacts_from(soup, clean(soup.get_text(" ")))
+        phones.update(p)
+        emails.update(e)
+        for tag in soup.find_all(["header", "footer"]):
+            t = clean(tag.get_text(" "))
+            if 40 < len(t) < 1500:
+                boiler.setdefault(t, url)
         title = clean(soup.title.string) if soup.title and soup.title.string else ""
         for t in soup(["script", "style", "noscript", "nav", "footer", "header", "svg"]):
             t.decompose()
@@ -61,6 +101,11 @@ def crawl(start_url, max_pages=40, progress=None):
             docs.append((url, f"{title}. {text}"))
             if progress:
                 progress(len(docs), url)
+    if phones or emails:
+        docs.append((start_url + "#contact", "Contact us. Phone and WhatsApp numbers: " + ", ".join(uniq_phones(phones))
+                     + ". Email addresses: " + ", ".join(k for k, _ in emails.most_common(6)) + "."))
+    for t, u in list(boiler.items())[:6]:
+        docs.append((u + "#header-footer", "Site header and footer information: " + t))
     return docs
 
 

@@ -13,19 +13,26 @@ def model():
 EXTRA = {"extra_body": {"reasoning_effort": "low"}}
 DELIM = "<<<META>>>"
 
-CHAT_PROMPT = """You are the AI concierge for @@company@@. Be warm, concise and professional; use light markdown. Reply in the language the visitor writes in (Hindi/Hinglish is welcome).
+CHAT_PROMPT = """You are the AI concierge for @@company@@. Be warm, concise and genuinely helpful; use light markdown. Reply in the language the visitor writes in (Hindi/Hinglish is welcome).
 
-Rules:
-- Answer ONLY from the context below. Never invent prices, availability, dates or policies. If the context lacks the answer, say so and offer to connect a human.
-- When the visitor shows planning intent, help first, then ask for ONE missing detail at a time (never an interrogation). Capture these fields when mentioned:
+How to help:
+- Solve it yourself first. Answer fully from the context, combining several pieces if needed. A partial answer beats a deflection: say what you do know, then what you could not find.
+- The company's public contact details (phone, WhatsApp, email, address) are published on its website and listed below. Share them whenever asked. This is expected and is not a privacy issue; never refuse.
+- Never invent prices, availability, dates or policies. If something is not in the context, say so plainly and invite the visitor to rephrase or ask something else. Do not jump to a human.
+- Do not end every reply with an offer to connect a human. Mention the team at most once per conversation unless the visitor asks again.
+- If the visitor is planning a wedding or trip, after answering you may ask ONE helpful question about their plans, but not on every turn and not if they are just browsing. Fields worth capturing when mentioned:
 @@fields@@
 - Already captured: @@lead@@
-- Escalate (escalate=true) when the visitor asks for a person or a call, is upset, wants a custom quote/negotiation/contract, is a job applicant, is a vendor/partner, has an urgent problem with an existing booking, or you cannot answer after trying. Do not escalate for questions you can answer. When escalating, tell the visitor you are connecting them with the team and will take their contact details.
-- Departments (use the key):
+
+Handoff is a last resort. Set escalate=true only when "reason" is one of: explicit_request (asks for a person, call or callback), complaint (upset or reporting a problem), urgent (time-critical issue with an existing booking), ready_to_book (clearly wants to proceed with a quote, booking or application). Otherwise escalate=false and reason="". When escalate is true, tell the visitor you are connecting them with the team and will take their contact details. Set unanswered=true (without escalating) when the context did not let you answer.
+
+Official contact details:
+@@contacts@@
+Departments (use the key):
 @@depts@@
 
 Output format: first the reply to the visitor (no JSON). Then a new line containing exactly <<<META>>> followed by one JSON object, nothing after it:
-{"escalate": false, "department": null, "reason": "", "lead": {"<field key>": "<value>"}, "lead_score": "cold|warm|hot", "suggestions": ["<short follow-up question the visitor might ask>", "...", "..."]}
+{"escalate": false, "reason": "", "department": null, "unanswered": false, "lead": {"<field key>": "<value>"}, "lead_score": "cold|warm|hot", "suggestions": ["<short follow-up question the visitor might ask>", "...", "..."]}
 "lead" holds only fields learned or updated this turn (use the field keys above). lead_score reflects buying intent: hot = specific date/budget/ready to talk, warm = exploring with some details, cold = general curiosity.
 
 Context:
@@ -69,6 +76,15 @@ def _depts(depts):
     return "\n".join(f"- {d['key']}: {d['name']} — {d['handles']}" for d in depts)
 
 
+def _contacts(depts):
+    rows = []
+    for d in depts:
+        bits = [x for x in (d.get("email"), d.get("phone")) if x and "example.com" not in str(x) and "replace-me" not in str(x)]
+        if bits:
+            rows.append(f"- {d['name']}: " + ", ".join(bits))
+    return "\n".join(rows) + "\n(Also use any contact details that appear in the context.)"
+
+
 def _retrieve(index, query, k=6):
     hits = index.search(query, k) if index else []
     ctx = "\n\n".join(f"[{h['source']}]\n{h['text']}" for h in hits) or "(no knowledge loaded)"
@@ -94,7 +110,7 @@ def stream_reply(index, history, ws, lead, turn):
     query = " ".join(m["content"] for m in history if m["role"] == "user")[-600:]
     ctx, turn.sources = _retrieve(index, query)
     system = _fill(CHAT_PROMPT, company=ws["company"], fields=_fields(ws["fields"]),
-                   lead=json.dumps(lead, ensure_ascii=False), depts=_depts(ws["depts"]), ctx=ctx)
+                   lead=json.dumps(lead, ensure_ascii=False), contacts=_contacts(ws["depts"]), depts=_depts(ws["depts"]), ctx=ctx)
     stream = _client().chat.completions.create(
         model=model(), temperature=0.3, stream=True, **EXTRA,
         messages=[{"role": "system", "content": system}] + history[-10:],

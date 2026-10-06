@@ -8,7 +8,7 @@ import streamlit as st
 import agent
 from rag import Index, crawl, read_upload
 
-st.set_page_config(page_title="IWP CHAT SUPPORT", layout="wide")
+st.set_page_config(page_title="IWP CHAT AGENT", page_icon="✨", layout="wide")
 
 for k in ("GROQ_API_KEY", "LLM_MODEL", "SMTP_USER", "SMTP_PASS", "HANDOFF_OVERRIDE_EMAIL"):
     try:
@@ -17,6 +17,7 @@ for k in ("GROQ_API_KEY", "LLM_MODEL", "SMTP_USER", "SMTP_PASS", "HANDOFF_OVERRI
     except Exception:
         pass
 
+HONORED = {"explicit_request", "complaint", "urgent", "ready_to_book"}
 BADGE = {"hot": "Hot lead", "warm": "Warm lead", "cold": "Cold lead"}
 DEFAULT_DEPTS = [{"key": "sales", "name": "Sales", "email": "replace-me@example.com", "phone": "", "handles": "new enquiries and quotes"}]
 DEFAULT_FIELDS = [{"key": "contact_name", "label": "Name"}, {"key": "email", "label": "Email"}, {"key": "phone", "label": "Phone"}, {"key": "interest", "label": "Interest"}]
@@ -78,8 +79,15 @@ def apply_meta(name, W, meta):
             W["lead"][k] = str(v)
     W["score"] = meta.get("lead_score") or W["score"]
     W["suggest"] = (meta.get("suggestions") or [])[:3]
-    if meta.get("escalate"):
-        W["pending"] = {"department": meta.get("department"), "reason": meta.get("reason", "")}
+    depts = recs(W["depts"])
+    if meta.get("unanswered"):
+        W["misses"] = W.get("misses", 0) + 1
+    if meta.get("escalate") and meta.get("reason") in HONORED and not W["pending"]:
+        W["pending"] = {"department": meta.get("department"), "reason": meta["reason"]}
+    elif W.get("misses", 0) >= 2 and not W["pending"] and not W.get("offered"):
+        W["offered"] = True
+        W["pending"] = {"department": meta.get("department") or depts[0]["key"], "reason": "unanswered"}
+        W["messages"].append({"role": "assistant", "content": "I couldn't find that on the website. If you'd like, I can pass this to the team. Just confirm your details below."})
     if W["lead"]:
         ss.leads[f"chat:{name}"] = {"source": "Web chat", "workspace": name, "score": W["score"], **W["lead"]}
 
@@ -164,9 +172,8 @@ def chat_view(name, W):
 
 
 def inbox_view(name, W):
-    st.title("Omnichannel inbox")
-    #st.caption("Instagram, WhatsApp and email land in one place. AI classifies, extracts the lead, drafts a grounded reply and routes it. A human approves. (Messages are simulated here; the same pipeline plugs into the Meta webhooks.)")
-    st.caption("Instagram, WhatsApp and email land in one place. AI classifies, extracts the lead, drafts a grounded reply and routes it. Human approves.")
+    st.title(" Omnichannel inbox")
+    st.caption("Instagram, WhatsApp and email land in one place. AI classifies, extracts the lead, drafts a grounded reply and routes it. A human approves. (Messages are simulated here; the same pipeline plugs into the Meta webhooks.)")
     depts, fields = recs(W["depts"]), recs(W["fields"])
     ws_cfg = {"company": W["company"], "depts": depts, "fields": fields}
     c1, c2 = st.columns([1, 2])
@@ -177,7 +184,7 @@ def inbox_view(name, W):
         sender = st.text_input("Sender", snd, key=f"sn{sample}")
         message = st.text_area("Message", txt, height=150, key=f"mg{sample}")
         run1 = st.button("Process with AI", type="primary", use_container_width=True)
-        run_all = st.button("Triage all samples", use_container_width=True)
+        run_all = st.button("⚡ Triage all samples", use_container_width=True)
 
     def process(ch_, snd_, msg_):
         r = agent.triage(W["index"], ws_cfg, ch_, snd_, msg_)
@@ -252,7 +259,7 @@ def admin_view(name, W):
                 st.link_button("Reply on WhatsApp", t["wa"])
 
 
-st.sidebar.title("✨ AI Concierge")
+st.sidebar.title("IWP CHAT AGENT")
 view = st.sidebar.radio("View", ["Chat", "Omnichannel inbox", "Admin"])
 name = st.sidebar.selectbox("Workspace", list(ss.ws))
 W = ss.ws[name]
@@ -289,8 +296,8 @@ with st.sidebar.expander("➕ New workspace"):
         st.rerun()
 
 if st.sidebar.button("Reset this chat", use_container_width=True):
-    W.update({"messages": [], "lead": {}, "score": "", "pending": None, "suggest": []})
+    W.update({"messages": [], "lead": {}, "score": "", "pending": None, "suggest": [], "misses": 0, "offered": False})
     ss.leads.pop(f"chat:{name}", None)
     st.rerun()
 
-{"Chat": chat_view, " Omnichannel inbox": inbox_view, "Admin": admin_view}[view](name, W)
+{"💬 Chat": chat_view, "📥 Omnichannel inbox": inbox_view, "📊 Admin": admin_view}[view](name, W)
