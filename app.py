@@ -10,14 +10,14 @@ from rag import Index, crawl, read_upload
 
 st.set_page_config(page_title="AI Concierge", page_icon="✨", layout="wide")
 
-for k in ("GROQ_API_KEY", "SMTP_USER", "SMTP_PASS", "HANDOFF_OVERRIDE_EMAIL"):
+for k in ("GROQ_API_KEY", "LLM_MODEL", "SMTP_USER", "SMTP_PASS", "HANDOFF_OVERRIDE_EMAIL"):
     try:
         if k in st.secrets:
             os.environ[k] = st.secrets[k]
     except Exception:
         pass
 
-BADGE = {"hot": "Hot lead", "warm": " Warm lead", "cold": "Cold lead"}
+BADGE = {"hot": "🔥 Hot lead", "warm": "🌤️ Warm lead", "cold": "❄️ Cold lead"}
 DEFAULT_DEPTS = [{"key": "sales", "name": "Sales", "email": "replace-me@example.com", "phone": "", "handles": "new enquiries and quotes"}]
 DEFAULT_FIELDS = [{"key": "contact_name", "label": "Name"}, {"key": "email", "label": "Email"}, {"key": "phone", "label": "Phone"}, {"key": "interest", "label": "Interest"}]
 

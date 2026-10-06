@@ -6,7 +6,11 @@ from urllib.parse import quote
 
 from groq import Groq
 
-MODEL = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile")
+def model():
+    return os.environ.get("LLM_MODEL", "openai/gpt-oss-120b")
+
+
+EXTRA = {"extra_body": {"reasoning_effort": "low"}}
 DELIM = "<<<META>>>"
 
 CHAT_PROMPT = """You are the AI concierge for @@company@@. Be warm, concise and professional; use light markdown. Reply in the language the visitor writes in (Hindi/Hinglish is welcome).
@@ -80,8 +84,8 @@ def parse_json(text):
 
 def _json(messages, temperature=0.2):
     r = _client().chat.completions.create(
-        model=MODEL, messages=messages, temperature=temperature,
-        response_format={"type": "json_object"},
+        model=model(), messages=messages, temperature=temperature,
+        response_format={"type": "json_object"}, **EXTRA,
     )
     return json.loads(r.choices[0].message.content)
 
@@ -92,7 +96,7 @@ def stream_reply(index, history, ws, lead, turn):
     system = _fill(CHAT_PROMPT, company=ws["company"], fields=_fields(ws["fields"]),
                    lead=json.dumps(lead, ensure_ascii=False), depts=_depts(ws["depts"]), ctx=ctx)
     stream = _client().chat.completions.create(
-        model=MODEL, temperature=0.3, stream=True,
+        model=model(), temperature=0.3, stream=True, **EXTRA,
         messages=[{"role": "system", "content": system}] + history[-10:],
     )
     buf, emitted, done = "", 0, False
