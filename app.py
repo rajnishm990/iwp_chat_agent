@@ -118,7 +118,7 @@ def chat_view(name, W):
                 if m.get("sources"):
                     st.caption("Sources: " + " · ".join(m["sources"]))
                 if m.get("hits"):
-                    with st.expander("🔎 Why this answer? (retrieved website text)"):
+                    with st.expander(" Why this answer? (retrieved website text)"):
                         for src, snippet in m["hits"]:
                             st.markdown(f"**{src}**  \n{snippet}…")
         if W["suggest"] and not W["pending"]:
