@@ -300,4 +300,4 @@ if st.sidebar.button("Reset this chat", use_container_width=True):
     ss.leads.pop(f"chat:{name}", None)
     st.rerun()
 
-{"💬 Chat": chat_view, "📥 Omnichannel inbox": inbox_view, "📊 Admin": admin_view}[view](name, W)
+{"Chat": chat_view, "Omnichannel inbox": inbox_view, "Admin": admin_view}[view](name, W)
