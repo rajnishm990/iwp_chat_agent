@@ -2,7 +2,7 @@ import json
 
 from rag import Index, crawl
 
-pages = 50
+pages = 60
 cache = {}
 for w in json.load(open("workspaces.json")):
     idx = Index()

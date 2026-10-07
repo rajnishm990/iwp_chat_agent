@@ -67,7 +67,8 @@ def uniq_phones(counter, n=6):
 
 def crawl(start_url, max_pages=40, progress=None):
     root = urlparse(start_url).netloc
-    seen, queue, docs = set(), deque([start_url]), []
+    seen, docs = set(), []
+    queue = deque([start_url] + [urljoin(start_url, p) for p in ("contact", "contact-us", "contactus", "Home/Contact", "about")])
     phones, emails, boiler = Counter(), Counter(), {}
     while queue and len(docs) < max_pages:
         url = urldefrag(queue.popleft())[0]
@@ -77,7 +78,7 @@ def crawl(start_url, max_pages=40, progress=None):
         time.sleep(0.15)
         try:
             r = requests.get(url, headers=HEADERS, timeout=10)
-            if "text/html" not in r.headers.get("content-type", ""):
+            if r.status_code != 200 or "text/html" not in r.headers.get("content-type", ""):
                 continue
         except requests.RequestException:
             continue
@@ -153,6 +154,13 @@ class Index:
         q /= np.linalg.norm(q)
         idx = np.argsort(-(self.vecs @ q))[:k]
         return [{"text": self.chunks[i], "source": self.sources[i]} for i in idx]
+
+    def contact_block(self, limit=3000):
+        found = {}
+        for c, s in zip(self.chunks, self.sources):
+            if s.endswith("#contact") or s.endswith("#header-footer"):
+                found.setdefault(s, []).append(c)
+        return "\n".join(f"[{s}] {' '.join(cs)}" for s, cs in found.items())[:limit]
 
     def stats(self):
         return len(set(self.sources)), len(self.chunks)

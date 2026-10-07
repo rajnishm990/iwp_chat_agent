@@ -103,7 +103,7 @@ def lead_card(W):
 
 
 def chat_view(name, W):
-    st.title(f"✨ {W['company']}")
+    st.title(f"{W['company']}")
     depts = recs(W["depts"])
     left, right = st.columns([3, 1.2])
     with right:
@@ -117,6 +117,10 @@ def chat_view(name, W):
                 st.markdown(m["content"])
                 if m.get("sources"):
                     st.caption("Sources: " + " · ".join(m["sources"]))
+                if m.get("hits"):
+                    with st.expander("🔎 Why this answer? (retrieved website text)"):
+                        for src, snippet in m["hits"]:
+                            st.markdown(f"**{src}**  \n{snippet}…")
         if W["suggest"] and not W["pending"]:
             cols = st.columns(len(W["suggest"]))
             for i, s in enumerate(W["suggest"]):
@@ -166,13 +170,13 @@ def chat_view(name, W):
                 W["messages"].pop()
                 st.error(f"LLM error: {e}")
                 return
-    W["messages"].append({"role": "assistant", "content": turn.text, "sources": turn.sources})
+    W["messages"].append({"role": "assistant", "content": turn.text, "sources": turn.sources, "hits": turn.hits})
     apply_meta(name, W, turn.meta)
     st.rerun()
 
 
 def inbox_view(name, W):
-    st.title(" Omnichannel inbox")
+    st.title("Omnichannel inbox")
     st.caption("Instagram, WhatsApp and email land in one place. AI classifies, extracts the lead, drafts a grounded reply and routes it. A human approves. (Messages are simulated here; the same pipeline plugs into the Meta webhooks.)")
     depts, fields = recs(W["depts"]), recs(W["fields"])
     ws_cfg = {"company": W["company"], "depts": depts, "fields": fields}
@@ -265,7 +269,7 @@ name = st.sidebar.selectbox("Workspace", list(ss.ws))
 W = ss.ws[name]
 st.sidebar.toggle("Send real emails", key="real_mail", value=False, help="Off = demo mode: handoffs are logged, nothing is sent.")
 
-with st.sidebar.expander("Knowledge & configuration"):
+with st.sidebar.expander("⚙️ Knowledge & configuration"):
     W["company"] = st.text_input("Company name", W["company"], key=f"co_{name}")
     urls = st.text_area("Website URLs (one per line)", "\n".join(W["urls"]), key=f"u_{name}")
     W["urls"] = [u.strip() for u in urls.splitlines() if u.strip().startswith("http")]
@@ -284,6 +288,8 @@ with st.sidebar.expander("Knowledge & configuration"):
         W["index"].save(name)
         st.success(f"Added {len(files)} file(s)")
     st.caption("Knowledge: %d sources, %d chunks" % W["index"].stats())
+    cb = W["index"].contact_block()
+    st.caption("Contacts found on site: " + (cb[:350] if cb else "none. Re-crawl, or the site may load them with JavaScript."))
     st.markdown("**Departments**")
     W["depts"] = st.data_editor(W["depts"], num_rows="dynamic", hide_index=True, key=f"d_{name}")
     st.markdown("**Lead fields**")

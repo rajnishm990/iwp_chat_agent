@@ -17,7 +17,7 @@ CHAT_PROMPT = """You are the AI concierge for @@company@@. Be warm, concise and 
 
 How to help:
 - Solve it yourself first. Answer fully from the context, combining several pieces if needed. A partial answer beats a deflection: say what you do know, then what you could not find.
-- The company's public contact details (phone, WhatsApp, email, address) are published on its website and listed below. Share them whenever asked. This is expected and is not a privacy issue; never refuse.
+- The company's public contact details (phone, WhatsApp, email, address) are published on its website and listed below. When asked how to contact the company, give the website's details first (phone/WhatsApp/email, and address if asked). Sharing them is expected and is not a privacy issue; never refuse. Quote numbers exactly as written.
 - Never invent prices, availability, dates or policies. If something is not in the context, say so plainly and invite the visitor to rephrase or ask something else. Do not jump to a human.
 - Do not end every reply with an offer to connect a human. Mention the team at most once per conversation unless the visitor asks again.
 - If the visitor is planning a wedding or trip, after answering you may ask ONE helpful question about their plans, but not on every turn and not if they are just browsing. Fields worth capturing when mentioned:
@@ -26,8 +26,12 @@ How to help:
 
 Handoff is a last resort. Set escalate=true only when "reason" is one of: explicit_request (asks for a person, call or callback), complaint (upset or reporting a problem), urgent (time-critical issue with an existing booking), ready_to_book (clearly wants to proceed with a quote, booking or application). Otherwise escalate=false and reason="". When escalate is true, tell the visitor you are connecting them with the team and will take their contact details. Set unanswered=true (without escalating) when the context did not let you answer.
 
-Official contact details:
+Contact details published on the company website (the source of truth; use these whenever the visitor asks how to reach the company, and prefer them over anything else):
+@@site_contacts@@
+
+Team-specific contacts set by the admin (use only when routing to a specific team, or when the website lists nothing):
 @@contacts@@
+
 Departments (use the key):
 @@depts@@
 
@@ -55,7 +59,7 @@ Return JSON only:
 
 class Turn:
     def __init__(self):
-        self.text, self.meta, self.sources = "", {}, []
+        self.text, self.meta, self.sources, self.hits = "", {}, [], []
 
 
 def _client():
@@ -88,7 +92,7 @@ def _contacts(depts):
 def _retrieve(index, query, k=6):
     hits = index.search(query, k) if index else []
     ctx = "\n\n".join(f"[{h['source']}]\n{h['text']}" for h in hits) or "(no knowledge loaded)"
-    return ctx, list(dict.fromkeys(h["source"] for h in hits))[:3]
+    return ctx, list(dict.fromkeys(h["source"] for h in hits))[:3], [(h["source"], h["text"][:260]) for h in hits]
 
 
 def parse_json(text):
@@ -108,9 +112,9 @@ def _json(messages, temperature=0.2):
 
 def stream_reply(index, history, ws, lead, turn):
     query = " ".join(m["content"] for m in history if m["role"] == "user")[-600:]
-    ctx, turn.sources = _retrieve(index, query)
+    ctx, turn.sources, turn.hits = _retrieve(index, query)
     system = _fill(CHAT_PROMPT, company=ws["company"], fields=_fields(ws["fields"]),
-                   lead=json.dumps(lead, ensure_ascii=False), contacts=_contacts(ws["depts"]), depts=_depts(ws["depts"]), ctx=ctx)
+                   lead=json.dumps(lead, ensure_ascii=False), site_contacts=(index.contact_block() if index else "") or "(none found on the website)", contacts=_contacts(ws["depts"]), depts=_depts(ws["depts"]), ctx=ctx)
     stream = _client().chat.completions.create(
         model=model(), temperature=0.3, stream=True, **EXTRA,
         messages=[{"role": "system", "content": system}] + history[-10:],
@@ -138,7 +142,7 @@ def stream_reply(index, history, ws, lead, turn):
 
 
 def triage(index, ws, channel, sender, message):
-    ctx, _ = _retrieve(index, message)
+    ctx, _, _ = _retrieve(index, message)
     system = _fill(TRIAGE_PROMPT, company=ws["company"], channel=channel,
                    fields=_fields(ws["fields"]), depts=_depts(ws["depts"]), ctx=ctx)
     return _json([{"role": "system", "content": system},
